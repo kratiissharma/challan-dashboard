@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fleetline — Challan Management Platform (Interactive Prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-primary:#2843CD; --color-primary-hover:#1F35A6; --color-primary-light:#DEE7FF; --color-primary-border:#B9C7FF; --color-primary-text:#1E2F8C;
+    --color-secondary:#2A2E3C; --color-secondary-hover:#1A1D26; --color-secondary-light:#EEEFF2; --color-secondary-border:#D1D1D1; --color-secondary-text:#2A2E3C;
+    --color-surface-page:#F5F7FA; --color-surface-card:#FFFFFF; --color-surface-hover:#EEF1F5; --color-surface-disabled:#F0F1F3;
+    --color-text-primary:#2A2E3C; --color-text-secondary:#5D5D5D; --color-text-tertiary:#9AA0AC; --color-text-inverse:#FFFFFF;
+    --color-border-default:#E3E6EC; --color-border-strong:#D1D1D1; --color-border-focus:#2843CD;
+    --color-success:#16A34A; --color-success-light:#EAFBF0; --color-success-border:#B7EFC5; --color-success-text:#0F6B33;
+    --color-warning:#F59E0B; --color-warning-light:#FFF7E6; --color-warning-border:#FCE3A5; --color-warning-text:#92400E;
+    --color-error:#E4353F; --color-error-light:#FEF1F1; --color-error-border:#FBCACA; --color-error-text:#99242D;
+    --radius-xs:4px; --radius-sm:8px; --radius-md:16px; --radius-lg:24px; --radius-xl:32px; --radius-full:9999px;
+    --font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font); color:var(--color-text-primary); background:var(--color-surface-page);
+    -webkit-font-smoothing:antialiased;
+  }
+  button, input{font-family:var(--font);}
+  a{color:inherit;}
+
+  /* ---------- shell ---------- */
+  #shell{display:flex; flex-direction:column; min-height:100vh; min-width:1180px;}
+  #topbar{
+    height:64px; flex:0 0 auto; background:var(--color-surface-card); border-bottom:1px solid var(--color-border-default);
+    display:flex; align-items:center; justify-content:space-between; padding:0 24px; position:sticky; top:0; z-index:20;
+  }
+  #topbar .screen-title{font-size:22px; font-weight:700;}
+  #topbar .right{display:flex; align-items:center; gap:18px;}
+  #topbar .role-line{font-size:13px; color:var(--color-text-secondary);}
+  .complib-btn{
+    border:1px solid var(--color-border-default); background:var(--color-surface-card); color:var(--color-text-secondary);
+    font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:var(--radius-full); cursor:pointer;
+  }
+  .complib-btn:hover{background:var(--color-surface-hover); color:var(--color-text-primary);}
+
+  #body-row{display:flex; flex:1 1 auto;}
+  #sidebar{
+    width:264px; flex:0 0 264px; background:var(--color-surface-card); border-right:1px solid var(--color-border-default);
+    padding:24px 20px; position:sticky; top:64px; height:calc(100vh - 64px);
+  }
+  #sidebar .brand{font-size:18px; font-weight:700; margin:0 0 16px 4px;}
+  #sidebar .divider{height:1px; background:var(--color-border-default); margin-bottom:15px;}
+  .nav-item{
+    display:flex; align-items:center; gap:12px; padding:9px 12px; border-radius:var(--radius-sm); margin-bottom:4px;
+    color:var(--color-text-secondary); font-size:14.5px; font-weight:500; cursor:pointer; border-left:3px solid transparent;
+    user-select:none;
+  }
+  .nav-item .dot{width:12px; height:1px; background:var(--color-text-tertiary); flex:0 0 auto;}
+  .nav-item:hover{background:var(--color-surface-hover);}
+  .nav-item.active{background:var(--color-secondary-light); color:var(--color-secondary-text); font-weight:600; border-left-color:var(--color-secondary);}
+  .nav-item.disabled{opacity:.55; cursor:not-allowed;}
+  .nav-item.disabled:hover{background:none;}
+
+  #main{flex:1 1 auto; padding:32px; max-width:1176px;}
+
+  /* ---------- generic bits ---------- */
+  .breadcrumb{font-size:13px; color:var(--color-text-tertiary); cursor:pointer; text-decoration:none;}
+  .breadcrumb:hover{color:var(--color-text-secondary); text-decoration:underline;}
+  .page-head{display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;}
+  .page-head h1{font-size:26px; font-weight:700; margin:0;}
+  .toolbar{display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;}
+  .search{
+    flex:0 0 320px; height:36px; border:1px solid var(--color-border-default); border-radius:var(--radius-sm);
+    background:var(--color-surface-card); padding:0 14px; font-size:13px; color:var(--color-text-primary);
+  }
+  .search::placeholder{color:var(--color-text-tertiary);}
+  .search:focus{outline:none; border-color:var(--color-border-focus);}
+  .spacer{flex:1 1 auto;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    height:30px; padding:0 14px; border-radius:var(--radius-full); border:1px solid var(--color-border-default);
+    background:var(--color-surface-card); color:var(--color-text-secondary); font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .chip.active{background:var(--color-primary); border-color:var(--color-primary); color:var(--color-text-inverse);}
+  .chip:hover:not(.active){background:var(--color-surface-hover);}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; cursor:pointer;
+    font-size:13.5px; font-weight:600; border-radius:var(--radius-full); padding:0 20px; height:38px;
+  }
+  .btn-primary{background:var(--color-primary); color:var(--color-text-inverse);}
+  .btn-primary:hover{background:var(--color-primary-hover);}
+  .btn-primary:disabled{background:var(--color-surface-disabled); color:var(--color-text-tertiary); cursor:not-allowed;}
+  .btn-secondary{background:var(--color-surface-page); color:var(--color-text-secondary); border:1px solid var(--color-border-default);}
+  .btn-secondary:hover{background:var(--color-surface-hover);}
+  .btn-block{width:100%;}
+
+  table{width:100%; border-collapse:collapse; background:var(--color-surface-card); border-radius:var(--radius-md); overflow:hidden; border:1px solid var(--color-border-default);}
+  thead th{background:var(--color-surface-hover); text-align:left; font-size:11px; letter-spacing:.4px; text-transform:uppercase; color:var(--color-text-tertiary); padding:12px 16px; font-weight:700;}
+  thead th.sortable{cursor:pointer; user-select:none; white-space:nowrap;}
+  thead th.sortable:hover{color:var(--color-text-secondary);}
+  thead th .arrow{opacity:.6; margin-left:3px;}
+  thead th.sorted .arrow{opacity:1; color:var(--color-primary);}
+  tbody tr{border-top:1px solid var(--color-border-default); cursor:pointer;}
+  tbody tr:hover{background:var(--color-surface-hover);}
+  tbody td{padding:14px 16px; font-size:13.5px; color:var(--color-text-secondary); vertical-align:middle;}
+  tbody td.strong{font-weight:600; color:var(--color-text-primary);}
+  tbody tr.empty-row{cursor:default;}
+  tbody tr.empty-row:hover{background:none;}
+
+  .badge{display:inline-flex; align-items:center; height:24px; padding:0 10px; border-radius:var(--radius-sm); font-size:12px; font-weight:700; border:1px solid transparent; white-space:nowrap;}
+  .badge-neutral{background:var(--color-secondary-light); border-color:var(--color-border-default); color:var(--color-text-secondary);}
+  .badge-primary{background:var(--color-primary-light); border-color:var(--color-primary-border); color:var(--color-primary-text);}
+  .badge-secondary{background:var(--color-secondary-light); border-color:var(--color-secondary-border); color:var(--color-secondary-text);}
+  .badge-success{background:var(--color-success-light); border-color:var(--color-success-border); color:var(--color-success-text);}
+  .badge-warning{background:var(--color-warning-light); border-color:var(--color-warning-border); color:var(--color-warning-text);}
+  .badge-error{background:var(--color-error-light); border-color:var(--color-error-border); color:var(--color-error-text);}
+
+  .card{background:var(--color-surface-card); border:1px solid var(--color-border-default); border-radius:var(--radius-md); padding:24px;}
+  .grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  .stat-label{font-size:11px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--color-text-tertiary); margin-bottom:8px;}
+  .stat-value{font-size:28px; font-weight:700; color:var(--color-text-primary); margin-bottom:8px;}
+  .stat-delta{font-size:12.5px; font-weight:600;}
+  .delta-up{color:var(--color-success-text);} .delta-down{color:var(--color-error-text);} .delta-flat{color:var(--color-text-secondary);}
+
+  .section-title{font-size:16px; font-weight:700; margin:28px 0 14px;}
+  .kv-strip{display:grid; grid-template-columns:repeat(4,1fr); background:var(--color-surface-card); border:1px solid var(--color-border-default); border-radius:var(--radius-md); overflow:hidden;}
+  .kv-strip .kv{padding:16px 20px; border-right:1px solid var(--color-border-default);}
+  .kv-strip .kv:last-child{border-right:none;}
+  .kv .k{font-size:10.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--color-text-tertiary); margin-bottom:6px;}
+  .kv .v{font-size:14px; font-weight:600; color:var(--color-text-primary);}
+
+  .empty-state{display:flex; flex-direction:column; align-items:center; justify-content:center; padding:44px 20px; text-align:center; background:var(--color-surface-card); border:1px solid var(--color-border-default); border-radius:var(--radius-md);}
+  .empty-state .glyph{font-size:26px; color:var(--color-text-tertiary); margin-bottom:10px;}
+  .empty-state.error .glyph{color:var(--color-error-text);}
+  .empty-state h4{margin:0 0 6px; font-size:15px; font-weight:600;}
+  .empty-state p{margin:0 0 16px; font-size:13px; color:var(--color-text-secondary); max-width:340px;}
+
+  .skeleton-row{display:flex; align-items:center; gap:14px; padding:14px 16px; background:var(--color-surface-card); border:1px solid var(--color-border-default); border-top:none;}
+  .skeleton-row:first-child{border-top:1px solid var(--color-border-default); border-radius:var(--radius-md) var(--radius-md) 0 0;}
+  .skeleton-row:last-child{border-radius:0 0 var(--radius-md) var(--radius-md);}
+  .skel{background:var(--color-surface-hover); border-radius:var(--radius-xs); animation:pulse 1.1s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.45;}}
+
+  .two-col{display:grid; grid-template-columns:1.5fr 1fr; gap:24px; align-items:start;}
+  .candidate{border:1px solid var(--color-border-default); border-radius:var(--radius-sm); padding:12px 14px; margin-bottom:10px; cursor:pointer; display:flex; align-items:center; justify-content:space-between; background:var(--color-surface-card);}
+  .candidate:hover{background:var(--color-surface-hover);}
+  .candidate.selected{border:2px solid var(--color-border-focus); background:var(--color-secondary-light); padding:11px 13px;}
+  .candidate .name{font-size:14px; font-weight:600; color:var(--color-text-primary);}
+  .candidate .role{font-size:12px; color:var(--color-text-secondary); margin-top:2px;}
+  .candidate .check{width:18px; height:18px; border-radius:50%; border:2px solid var(--color-border-focus); flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-size:11px; color:var(--color-border-focus);}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:11px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--color-text-tertiary); margin-bottom:6px;}
+  .field input, .field textarea{
+    width:100%; height:38px; border:1px solid var(--color-border-default); border-radius:var(--radius-sm); padding:0 12px;
+    font-size:13.5px; color:var(--color-text-primary); background:var(--color-surface-page);
+  }
+  .field input:focus{outline:none; border-color:var(--color-border-focus); background:var(--color-surface-card);}
+  .field-error{font-size:11.5px; color:var(--color-error-text); margin-top:4px; display:none;}
+
+  .stepper{display:flex; margin-bottom:24px; background:var(--color-surface-card); border:1px solid var(--color-border-default); border-radius:var(--radius-md); overflow:hidden;}
+  .step{flex:1; text-align:center; padding:18px 8px; position:relative; border-right:1px solid var(--color-border-default);}
+  .step:last-child{border-right:none;}
+  .step .sdot{width:10px; height:10px; border-radius:50%; background:var(--color-border-strong); margin:0 auto 8px;}
+  .step.done .sdot{background:var(--color-primary);}
+  .step.disputed-dot .sdot{background:var(--color-error);}
+  .step .slabel{font-size:12.5px; color:var(--color-text-tertiary); font-weight:600;}
+  .step.done .slabel{color:var(--color-text-primary);}
+  .step.disputed-dot .slabel{color:var(--color-error-text);}
+
+  .timeline{list-style:none; margin:0; padding:0;}
+  .timeline li{display:flex; gap:12px; padding-bottom:18px; position:relative;}
+  .timeline li:last-child{padding-bottom:0;}
+  .timeline .tdot{width:8px; height:8px; border-radius:50%; background:var(--color-primary); margin-top:6px; flex:0 0 auto;}
+  .timeline .tbody-text .ttitle{font-size:13.5px; font-weight:600; color:var(--color-text-primary);}
+  .timeline .tbody-text .tmeta{font-size:12px; color:var(--color-text-tertiary); margin-top:2px;}
+
+  .banner{padding:14px 16px; border-radius:var(--radius-sm); font-size:13px; margin-bottom:20px; display:flex; gap:10px; align-items:flex-start;}
+  .banner-error{background:var(--color-error-light); border:1px solid var(--color-error-border); color:var(--color-error-text);}
+  .banner-success{background:var(--color-success-light); border:1px solid var(--color-success-border); color:var(--color-success-text);}
+
+  .prototype-tag{position:fixed; bottom:16px; left:16px; background:var(--color-secondary); color:#fff; font-size:11px; font-weight:700; padding:6px 12px; border-radius:var(--radius-full); opacity:.85; z-index:30; letter-spacing:.3px;}
+
+  /* toast */
+  #toast-wrap{position:fixed; bottom:20px; right:20px; z-index:100; display:flex; flex-direction:column; gap:10px;}
+  .toast{background:var(--color-secondary); color:#fff; padding:12px 18px; border-radius:var(--radius-sm); font-size:13px; max-width:320px; box-shadow:0 8px 24px rgba(0,0,0,.18); animation:toastin .2s ease-out;}
+  @keyframes toastin{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+
+  /* component library overlay */
+  #complib-overlay{position:fixed; inset:0; background:rgba(20,22,30,.5); z-index:200; display:none; align-items:flex-start; justify-content:center; padding:40px 20px; overflow:auto;}
+  #complib-overlay.open{display:flex;}
+  #complib-panel{background:#fff; border-radius:var(--radius-md); max-width:920px; width:100%; padding:32px; position:relative;}
+  #complib-panel h2{margin:0 0 6px; font-size:22px;}
+  #complib-panel .sub{color:var(--color-text-secondary); font-size:13px; margin-bottom:24px;}
+  #complib-panel .cl-section{margin-bottom:28px;}
+  #complib-panel .cl-section h3{font-size:14px; margin:0 0 12px; color:var(--color-text-tertiary); text-transform:uppercase; letter-spacing:.3px; font-weight:700;}
+  #complib-panel .cl-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  #complib-close{position:absolute; top:20px; right:20px; border:none; background:var(--color-surface-hover); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:15px; color:var(--color-text-secondary);}
+  .cl-swatch{width:100%; max-width:340px;}
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <div id="topbar">
+    <div class="screen-title" id="screen-title">Dashboard</div>
+    <div class="right">
+      <button class="complib-btn" data-action="open-complib">Component Library ↗</button>
+      <span class="role-line" id="role-line">Operations · Priya Nair</span>
+    </div>
+  </div>
+  <div id="body-row">
+    <div id="sidebar">
+      <div class="brand">Fleetline</div>
+      <div class="divider"></div>
+      <div class="nav-item" data-nav="dashboard"><span class="dot"></span>Dashboard</div>
+      <div class="nav-item" data-nav="vehicles"><span class="dot"></span>Vehicles</div>
+      <div class="nav-item" data-nav="challans"><span class="dot"></span>Challans</div>
+      <div class="nav-item disabled" data-nav="reports"><span class="dot"></span>Reports</div>
+    </div>
+    <div id="main"></div>
+  </div>
+</div>
+
+<div class="prototype-tag">Interactive prototype — not connected to a real backend</div>
+<div id="toast-wrap"></div>
+
+<div id="complib-overlay">
+  <div id="complib-panel">
+    <button id="complib-close" data-action="close-complib">✕</button>
+    <h2>Component Library</h2>
+    <div class="sub">Every reusable component and its documented states, in one place — see ui_guide.md for full specs.</div>
+    <div id="complib-body"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   DATA
+   ========================================================================= */
+const VEHICLES = [
+  { id:'DL-01-AB-1234', owner:'Andor Fleet Pvt. Ltd.', type:'Light Commercial Vehicle', typeShort:'LCV',
+    driver:'Rohan Mehta', driverSinceISO:'2026-03-12', driverSinceDisplay:'12 Mar 2026', lease:null },
+  { id:'MH-12-CD-5678', owner:'Andor Fleet Pvt. Ltd.', type:'Sedan', typeShort:'Sedan',
+    driver:null, driverSinceISO:null, driverSinceDisplay:null, lease:null },
+  { id:'KA-05-EF-9012', owner:'Prime Leasing Co.', type:'Sport Utility Vehicle', typeShort:'SUV',
+    driver:null, driverSinceISO:null, driverSinceDisplay:null, lease:'Priya Nair' },
+  { id:'TN-09-GH-3456', owner:'Sundar Logistics', type:'Heavy Truck', typeShort:'Truck',
+    driver:'Vikram Singh', driverSinceISO:'2026-02-01', driverSinceDisplay:'01 Feb 2026', lease:null },
+  { id:'GJ-27-JK-7890', owner:'Andor Fleet Pvt. Ltd.', type:'Light Commercial Vehicle', typeShort:'LCV',
+    driver:null, driverSinceISO:null, driverSinceDisplay:null, lease:null },
+];
+
+const CHALLANS = [
+  { id:'CH-10234', vehicleId:'DL-01-AB-1234', violation:'Speeding (18 km/h over limit)', violationShort:'Speeding',
+    dateISO:'2026-09-02', dateDisplay:'02 Sep 2026', time:'4:42 PM', fine:2000, location:'NH-48, Km 214, Gurugram',
+    authority:'Haryana Traffic Police', status:'pending', confirmed:null, extra:[] },
+  { id:'CH-10150', vehicleId:'DL-01-AB-1234', violation:'No Parking', violationShort:'No Parking',
+    dateISO:'2026-07-25', dateDisplay:'25 Jul 2026', time:'11:10 AM', fine:500, location:'Sector 62, Noida',
+    authority:'Noida Traffic Police', status:'assigned', confirmed:{name:'Andor Fleet Pvt. Ltd.', role:'Owner'}, extra:[] },
+  { id:'CH-10101', vehicleId:'DL-01-AB-1234', violation:'No Parking', violationShort:'No Parking',
+    dateISO:'2026-07-18', dateDisplay:'18 Jul 2026', time:'2:05 PM', fine:500, location:'MG Road, Gurugram',
+    authority:'Haryana Traffic Police', status:'resolved', confirmed:{name:'Andor Fleet Pvt. Ltd.', role:'Owner'},
+    payment:{amount:500, date:'20 Jul 2026', ref:'UTR2207260041'}, extra:[] },
+  { id:'CH-10228', vehicleId:'MH-12-CD-5678', violation:'No Parking', violationShort:'No Parking',
+    dateISO:'2026-08-29', dateDisplay:'29 Aug 2026', time:'9:20 AM', fine:500, location:'Bandra West, Mumbai',
+    authority:'Mumbai Traffic Police', status:'resolved', confirmed:{name:'Andor Fleet Pvt. Ltd.', role:'Owner'},
+    payment:{amount:500, date:'02 Sep 2026', ref:'UTR2909260017'}, extra:[] },
+  { id:'CH-10205', vehicleId:'KA-05-EF-9012', violation:'Signal Jump', violationShort:'Signal Jump',
+    dateISO:'2026-08-20', dateDisplay:'20 Aug 2026', time:'6:15 PM', fine:1000, location:'MG Road, Bengaluru',
+    authority:'Bengaluru Traffic Police', status:'assigned', confirmed:{name:'Priya Nair', role:'Lessee'}, extra:[] },
+  { id:'CH-10199', vehicleId:'TN-09-GH-3456', violation:'Overloading', violationShort:'Overloading',
+    dateISO:'2026-08-14', dateDisplay:'14 Aug 2026', time:'3:40 PM', fine:5000, location:'NH-44, Chennai Bypass',
+    authority:'Tamil Nadu Highway Police', status:'disputed', confirmed:{name:'Sundar Logistics', role:'Owner'},
+    disputeNote:'Weighbridge slip attached — owner contests the axle-load reading.', extra:[] },
+  { id:'CH-10188', vehicleId:'TN-09-GH-3456', violation:'Overloading', violationShort:'Overloading',
+    dateISO:'2026-08-10', dateDisplay:'10 Aug 2026', time:'1:15 PM', fine:5000, location:'NH-44, Krishnagiri',
+    authority:'Tamil Nadu Highway Police', status:'pending', confirmed:null, extra:[] },
+  { id:'CH-10177', vehicleId:'TN-09-GH-3456', violation:'No Parking', violationShort:'No Parking',
+    dateISO:'2026-08-05', dateDisplay:'05 Aug 2026', time:'10:30 AM', fine:500, location:'Anna Salai, Chennai',
+    authority:'Chennai Traffic Police', status:'assigned', confirmed:{name:'Sundar Logistics', role:'Owner'}, extra:[] },
+];
+
+/* =========================================================================
+   STATE
+   ========================================================================= */
+const STATE = {
+  view:'dashboard', params:{},
+  filters:{ vehicles:{status:'all', q:''}, challans:{status:'all', q:''} },
+  sort:{ vehicles:{col:null, dir:1}, challans:{col:null, dir:1} },
+  selected:{}, // challanId -> candidate index selected
+};
+
+/* =========================================================================
+   DATA HELPERS
+   ========================================================================= */
+function getVehicle(id){ return VEHICLES.find(v=>v.id===id); }
+function getChallan(id){ return CHALLANS.find(c=>c.id===id); }
+function challansForVehicle(vid){ return CHALLANS.filter(c=>c.vehicleId===vid); }
+function activeCountForVehicle(vid){ return challansForVehicle(vid).filter(c=>c.status!=='resolved').length; }
+function vehicleStatus(vid){
+  const cs = challansForVehicle(vid);
+  if(cs.some(c=>c.status==='disputed')) return 'disputed';
+  if(cs.some(c=>c.status==='assigned')) return 'assigned';
+  if(cs.some(c=>c.status==='pending')) return 'pending';
+  return 'clear';
+}
+function fmtMoney(n){ return '₹ ' + n.toLocaleString('en-IN'); }
+
+function getCandidates(challan){
+  const v = getVehicle(challan.vehicleId);
+  const cands = [];
+  let driverSuggested = false;
+  if(v.driver){
+    driverSuggested = challan.dateISO >= v.driverSinceISO;
+    cands.push({ name:v.driver, role:'Driver', context:`Driver · Assigned since ${v.driverSinceDisplay}`, suggested:driverSuggested });
+  }
+  cands.push({ name:v.owner, role:'Owner', context:'Registered owner', suggested: !driverSuggested && !v.lease });
+  if(v.lease){
+    cands.push({ name:v.lease, role:'Lessee', context:'Current lessee', suggested:false });
+  }
+  return cands;
+}
+
+function badge(status){
+  const map = {
+    pending:['badge-warning','Pending'], assigned:['badge-primary','Assigned'],
+    disputed:['badge-error','Disputed'], resolved:['badge-success','Resolved'], clear:['badge-success','Clear'],
+  };
+  const [cls,label] = map[status] || ['badge-neutral', status];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+/* =========================================================================
+   NAVIGATION / RENDER LOOP
+   ========================================================================= */
+const titles = { dashboard:'Dashboard', vehicles:'Vehicles', 'vehicle-details':'Vehicle Details',
+                 challans:'Challans', 'challan-details':'Challan Details', payment:'Payment & Resolution' };
+const roleLines = { payment:'Finance · Arjun Kapoor' };
+
+function navigate(view, params={}, opts={}){
+  STATE.view = view; STATE.params = params;
+  document.getElementById('screen-title').textContent = titles[view] || view;
+  document.getElementById('role-line').textContent = roleLines[view] || 'Operations · Priya Nair';
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const topLevel = {dashboard:'dashboard', vehicles:'vehicles', 'vehicle-details':'vehicles', challans:'challans', 'challan-details':'challans', payment:'challans'}[view];
+  const navEl = document.querySelector(`.nav-item[data-nav="${topLevel}"]`);
+  if(navEl) navEl.classList.add('active');
+
+  if(opts.skipLoading){ render(); window.scrollTo(0,0); return; }
+  document.getElementById('main').innerHTML = skeletonFor(view);
+  window.scrollTo(0,0);
+  setTimeout(render, 320);
+}
+
+function skeletonFor(view){
+  const rows = (view==='dashboard') ? 4 : 5;
+  let html = `<div class="page-head"><h1 class="skel" style="width:220px;height:26px;border-radius:6px;"></h1></div>`;
+  html += `<div style="margin-bottom:16px;"><div class="skel" style="width:320px;height:36px;border-radius:8px;"></div></div>`;
+  for(let i=0;i<rows;i++){
+    html += `<div class="skeleton-row">
+      <div class="skel" style="width:34px;height:34px;border-radius:8px;"></div>
+      <div style="flex:1;"><div class="skel" style="width:40%;height:12px;border-radius:4px;margin-bottom:8px;"></div><div class="skel" style="width:25%;height:10px;border-radius:4px;"></div></div>
+      <div class="skel" style="width:70px;height:22px;border-radius:8px;"></div>
+    </div>`;
+  }
+  return html;
+}
+
+function render(){
+  const main = document.getElementById('main');
+  switch(STATE.view){
+    case 'dashboard': main.innerHTML = viewDashboard(); break;
+    case 'vehicles': main.innerHTML = viewVehicleListing(); break;
+    case 'vehicle-details': main.innerHTML = viewVehicleDetails(STATE.params.id); break;
+    case 'challans': main.innerHTML = viewChallanListing(); break;
+    case 'challan-details': main.innerHTML = viewChallanDetails(STATE.params.id); break;
+    case 'payment': main.innerHTML = viewPayment(STATE.params.id); break;
+  }
+  if(STATE.view==='payment') wirePaymentForm();
+}
+
+/* =========================================================================
+   VIEW: DASHBOARD
+   ========================================================================= */
+function viewDashboard(){
+  const recent = [...CHALLANS].sort((a,b)=> b.dateISO.localeCompare(a.dateISO)).slice(0,4);
+  return `
+    <div class="page-head"><h1>Dashboard</h1></div>
+    <div class="grid-3" style="margin-bottom:28px;">
+      ${statCard('Total Vehicles','248','up','+12.4% vs last month')}
+      ${statCard('Disputed Challans','17','down','-3.1% vs last month')}
+      ${statCard('Pending Assignment','42','flat','0.0% vs last month')}
+    </div>
+    <div class="section-title" style="margin-top:0;">Recent Challans</div>
+    <table>
+      <tbody>
+        ${recent.map(c=>`
+          <tr data-route="challan-row" data-id="${c.id}">
+            <td class="strong">${c.id} · ${c.vehicleId}<div style="font-weight:400;color:var(--color-text-secondary);font-size:12px;margin-top:3px;">${c.violationShort}</div></td>
+            <td style="text-align:right;">${badge(c.status)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  `;
+}
+function statCard(label,val,dir,delta){
+  const arrow = {up:'▲',down:'▼',flat:'—'}[dir];
+  const cls = {up:'delta-up',down:'delta-down',flat:'delta-flat'}[dir];
+  return `<div class="card">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value">${val}</div>
+    <div class="stat-delta ${cls}">${arrow} ${delta}</div>
+  </div>`;
+}
+
+/* =========================================================================
+   VIEW: VEHICLE LISTING
+   ========================================================================= */
+function viewVehicleListing(){
+  return `
+    <div class="page-head"><h1>Vehicles</h1></div>
+    <div class="toolbar">
+      <input class="search" placeholder="Search by vehicle number, owner..." data-search="vehicles" value="${STATE.filters.vehicles.q}">
+      <div class="chips" data-chipgroup="vehicles">
+        ${chip('vehicles','all','All')}${chip('vehicles','pending','Pending')}${chip('vehicles','assigned','Assigned')}${chip('vehicles','disputed','Disputed')}${chip('vehicles','clear','Clear')}
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-action="add-vehicle">+ Add Vehicle</button>
+    </div>
+    <table>
+      <thead><tr>
+        ${sortHeader('vehicles','id','Vehicle Number')}
+        ${sortHeader('vehicles','owner','Owner')}
+        ${sortHeader('vehicles','typeShort','Type')}
+        ${sortHeader('vehicles','active','Active Challans')}
+        <th>Status</th>
+      </tr></thead>
+      <tbody id="vehicle-tbody">${vehicleRows()}</tbody>
+    </table>
+  `;
+}
+function chip(group,val,label){
+  const active = STATE.filters[group].status===val ? 'active' : '';
+  return `<button class="chip ${active}" data-chip="${group}:${val}">${label}</button>`;
+}
+function sortHeader(group,col,label){
+  const s = STATE.sort[group];
+  const sorted = s.col===col;
+  const arrow = sorted ? (s.dir===1?'▲':'▼') : '↕';
+  return `<th class="sortable ${sorted?'sorted':''}" data-sort="${group}:${col}">${label} <span class="arrow">${arrow}</span></th>`;
+}
+function vehicleRows(){
+  let rows = VEHICLES.map(v=>({...v, active:activeCountForVehicle(v.id), status:vehicleStatus(v.id)}));
+  const f = STATE.filters.vehicles;
+  if(f.status!=='all') rows = rows.filter(r=>r.status===f.status);
+  if(f.q.trim()) {
+    const q = f.q.toLowerCase();
+    rows = rows.filter(r=> r.id.toLowerCase().includes(q) || r.owner.toLowerCase().includes(q));
+  }
+  const s = STATE.sort.vehicles;
+  if(s.col){
+    rows.sort((a,b)=>{
+      let av=a[s.col], bv=b[s.col];
+      if(typeof av==='number') return (av-bv)*s.dir;
+      return String(av).localeCompare(String(bv))*s.dir;
+    });
+  }
+  if(!rows.length) return `<tr class="empty-row"><td colspan="5" style="padding:0;"><div class="empty-state"><div class="glyph">▤</div><h4>No vehicles match this filter</h4><p>Try a different status filter or clear the search.</p></div></td></tr>`;
+  return rows.map(r=>`
+    <tr data-route="vehicle-row" data-id="${r.id}">
+      <td class="strong">${r.id}</td>
+      <td>${r.owner}</td>
+      <td>${r.typeShort}</td>
+      <td>${r.active}</td>
+      <td>${badge(r.status)}</td>
+    </tr>`).join('');
+}
+
+/* =========================================================================
+   VIEW: VEHICLE DETAILS
+   ========================================================================= */
+function viewVehicleDetails(id){
+  const v = getVehicle(id);
+  const cs = challansForVehicle(id).sort((a,b)=> b.dateISO.localeCompare(a.dateISO));
+  return `
+    <a class="breadcrumb" data-route="to-vehicles">← Vehicles /</a>
+    <div class="page-head" style="margin-top:6px;">
+      <h1>${v.id}</h1>
+      ${badge(vehicleStatus(id)==='clear' ? 'clear' : vehicleStatus(id))}
+      <span style="font-size:13px;color:var(--color-text-tertiary);">${activeCountForVehicle(id)} active challan${activeCountForVehicle(id)===1?'':'s'}</span>
+    </div>
+    <div class="kv-strip" style="margin-bottom:28px;">
+      <div class="kv"><div class="k">Owner</div><div class="v">${v.owner}</div></div>
+      <div class="kv"><div class="k">Type</div><div class="v">${v.type}</div></div>
+      <div class="kv"><div class="k">Current Driver</div><div class="v">${v.driver ? `${v.driver} <span style="font-weight:400;color:var(--color-text-secondary);">(since ${v.driverSinceDisplay})</span>` : '— No driver on record'}</div></div>
+      <div class="kv"><div class="k">Current Lease</div><div class="v">${v.lease ? v.lease : '— Not leased'}</div></div>
+    </div>
+    <div class="section-title">Challan History</div>
+    ${cs.length ? `
+      <table><thead><tr><th>Challan ID</th><th>Violation</th><th>Date</th><th>Responsibility</th><th>Status</th></tr></thead>
+      <tbody>${cs.map(c=>`
+        <tr data-route="challan-row" data-id="${c.id}">
+          <td class="strong">${c.id}</td><td>${c.violationShort}</td><td>${c.dateDisplay}</td>
+          <td>${c.confirmed ? `${c.confirmed.name} (${c.confirmed.role})` : '<span style="color:var(--color-text-tertiary);">Not yet assigned</span>'}</td>
+          <td>${badge(c.status)}</td>
+        </tr>`).join('')}</tbody></table>
+    ` : `
+      <div class="empty-state"><div class="glyph">▤</div><h4>No challans on record</h4><p>This vehicle has a clean history — nothing to show here yet.</p></div>
+    `}
+  `;
+}
+
+/* =========================================================================
+   VIEW: CHALLAN LISTING
+   ========================================================================= */
+function viewChallanListing(){
+  return `
+    <div class="page-head"><h1>Challans</h1></div>
+    <div class="toolbar">
+      <input class="search" placeholder="Search by challan ID, vehicle..." data-search="challans" value="${STATE.filters.challans.q}">
+      <div class="chips" data-chipgroup="challans">
+        ${chip('challans','all','All')}${chip('challans','pending','Pending')}${chip('challans','assigned','Assigned')}${chip('challans','disputed','Disputed')}${chip('challans','resolved','Resolved')}
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        ${sortHeader('challans','id','Challan ID')}
+        ${sortHeader('challans','vehicleId','Vehicle')}
+        ${sortHeader('challans','violationShort','Type')}
+        ${sortHeader('challans','dateISO','Date')}
+        <th>Responsibility</th><th>Status</th>
+      </tr></thead>
+      <tbody id="challan-tbody">${challanRows()}</tbody>
+    </table>
+  `;
+}
+function challanRows(){
+  let rows = [...CHALLANS];
+  const f = STATE.filters.challans;
+  if(f.status!=='all') rows = rows.filter(r=>r.status===f.status);
+  if(f.q.trim()){
+    const q = f.q.toLowerCase();
+    rows = rows.filter(r=> r.id.toLowerCase().includes(q) || r.vehicleId.toLowerCase().includes(q) || r.violation.toLowerCase().includes(q));
+  }
+  const s = STATE.sort.challans;
+  if(s.col){
+    rows.sort((a,b)=> String(a[s.col]).localeCompare(String(b[s.col])) * s.dir);
+  }
+  if(!rows.length) return `<tr class="empty-row"><td colspan="6" style="padding:0;"><div class="empty-state"><div class="glyph">▤</div><h4>No challans match this filter</h4><p>Try a different status filter or clear the search.</p></div></td></tr>`;
+  return rows.map(c=>`
+    <tr data-route="challan-row" data-id="${c.id}">
+      <td class="strong">${c.id}</td><td>${c.vehicleId}</td><td>${c.violationShort}</td><td>${c.dateDisplay}</td>
+      <td>${c.confirmed ? `${c.confirmed.name} (${c.confirmed.role})` : '<span style="color:var(--color-text-tertiary);">—</span>'}</td>
+      <td>${badge(c.status)}</td>
+    </tr>`).join('');
+}
+
+/* =========================================================================
+   VIEW: CHALLAN DETAILS (responsibility assignment)
+   ========================================================================= */
+function viewChallanDetails(id){
+  const c = getChallan(id);
+  const cands = getCandidates(c);
+  let selIdx = STATE.selected[id];
+  if(selIdx===undefined){ selIdx = cands.findIndex(x=>x.suggested); if(selIdx<0) selIdx=0; STATE.selected[id]=selIdx; }
+  const sel = cands[selIdx];
+  return `
+    <a class="breadcrumb" data-route="to-challans">← Challans /</a>
+    <div class="page-head" style="margin-top:6px;"><h1>${c.id}</h1>${badge(c.status)}</div>
+    <div class="two-col">
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:18px;">Violation Details</div>
+        ${kvRow('Vehicle', c.vehicleId)}
+        ${kvRow('Violation Type', c.violation)}
+        ${kvRow('Date &amp; Time', `${c.dateDisplay}, ${c.time}`)}
+        ${kvRow('Location', c.location)}
+        ${kvRow('Fine Amount', fmtMoney(c.fine))}
+        ${kvRow('Issuing Authority', c.authority)}
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:6px;">Assign Responsibility</div>
+        <div style="font-size:12.5px;color:var(--color-text-secondary);margin-bottom:16px;">Suggested based on the active driver assignment at the time of the violation.</div>
+        ${cands.map((cd,i)=>`
+          <div class="candidate ${i===selIdx?'selected':''}" data-action="pick-candidate" data-challan="${id}" data-idx="${i}">
+            <div>
+              <div class="name">${cd.name}</div>
+              <div class="role">${cd.context}${cd.suggested?' · Suggested':''}</div>
+            </div>
+            ${i===selIdx ? '<div class="check">✓</div>' : ''}
+          </div>`).join('')}
+        <button class="btn btn-primary btn-block" style="margin-top:8px;" data-action="confirm-assignment" data-challan="${id}">Confirm Assignment — ${sel.name} (${sel.role})</button>
+      </div>
+    </div>
+  `;
+}
+function kvRow(k,v){
+  return `<div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--color-border-default);font-size:13.5px;">
+    <span style="color:var(--color-text-secondary);">${k}</span><span style="font-weight:600;color:var(--color-text-primary);">${v}</span>
+  </div>`;
+}
+
+/* =========================================================================
+   VIEW: PAYMENT & RESOLUTION
+   ========================================================================= */
+function viewPayment(id){
+  const c = getChallan(id);
+  const stages = ['pending','assigned','paid','resolved'];
+  const order = {pending:0, assigned:1, resolved:3, disputed:1};
+  const currentIdx = order[c.status] ?? 0;
+  const isDisputed = c.status==='disputed';
+  const stepHtml = ['Pending','Assigned','Paid','Resolved'].map((label,i)=>{
+    let cls = i<=currentIdx ? 'done' : '';
+    if(isDisputed && i===3) cls = 'disputed-dot';
+    if(isDisputed && i===2) cls = ''; // "Paid" never happened on the disputed branch — leave it neutral, not alarmed
+    return `<div class="step ${cls}"><div class="sdot"></div><div class="slabel">${isDisputed && i===3 ? 'Disputed' : label}</div></div>`;
+  }).join('');
+
+  const timeline = buildTimeline(c);
+  const readOnly = c.status==='resolved' || c.status==='disputed';
+
+  return `
+    <a class="breadcrumb" data-route="to-challans">← Challans /</a>
+    <div class="page-head" style="margin-top:6px;"><h1>${c.id}</h1>${badge(c.status)}</div>
+    <div class="stepper">${stepHtml}</div>
+    <div class="two-col">
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:18px;">Resolution Timeline</div>
+        <ul class="timeline">${timeline.map(t=>`<li><div class="tdot"></div><div class="tbody-text"><div class="ttitle">${t.title}</div><div class="tmeta">${t.meta}</div></div></li>`).join('')}</ul>
+      </div>
+      <div class="card">
+        <div style="font-size:15px;font-weight:700;margin-bottom:18px;">Record Payment</div>
+        ${readOnly ? `
+          <div class="banner ${c.status==='disputed' ? 'banner-error' : 'banner-success'}">
+            ${c.status==='disputed' ? `<span>⚠</span><span>Disputed — ${c.disputeNote || 'awaiting review.'}</span>` : `<span>✓</span><span>Paid &amp; Resolved on ${c.payment ? c.payment.date : '—'}${c.payment ? ` · Ref ${c.payment.ref}`:''}.</span>`}
+          </div>
+          <button class="btn btn-secondary btn-block" data-route="to-challans">Back to Challans</button>
+        ` : `
+          <div class="field"><label>Amount Paid (₹)</label><input type="number" id="pay-amount" placeholder="e.g. ${c.fine}"></div>
+          <div class="field"><label>Payment Date</label><input type="date" id="pay-date"></div>
+          <div class="field"><label>Payment Reference / UTR</label><input type="text" id="pay-ref" placeholder="e.g. UTR0609260123"></div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-primary" style="flex:1;" id="btn-mark-paid" disabled data-action="mark-paid" data-challan="${id}">Mark Paid &amp; Resolved</button>
+            <button class="btn btn-secondary" style="flex:1;" data-action="mark-disputed" data-challan="${id}">Mark as Disputed</button>
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+}
+function buildTimeline(c){
+  const t = [{ title:'Challan recorded', meta:`${c.dateDisplay}, ${c.time} · System` }];
+  if(c.status!=='pending' && c.confirmed){
+    t.push({ title:`Responsibility assigned to ${c.confirmed.name} (${c.confirmed.role})`, meta:'Priya Nair · Operations' });
+  }
+  if(c.status==='assigned'){
+    t.push({ title:'Awaiting payment confirmation', meta:'Current step · Finance team' });
+  }
+  if(c.status==='resolved' && c.payment){
+    t.push({ title:`Payment recorded — ${fmtMoney(c.payment.amount)}`, meta:`${c.payment.date} · Ref ${c.payment.ref}` });
+    t.push({ title:'Marked Resolved', meta:`${c.payment.date} · Arjun Kapoor · Finance` });
+  }
+  if(c.status==='disputed'){
+    t.push({ title:'Marked Disputed', meta:`Current step · ${c.disputeNote || 'Under review'}` });
+  }
+  c.extra.forEach(e=>t.push(e));
+  return t;
+}
+function wirePaymentForm(){
+  const amt = document.getElementById('pay-amount'), date = document.getElementById('pay-date'),
+        ref = document.getElementById('pay-ref'), btn = document.getElementById('btn-mark-paid');
+  if(!btn) return;
+  function check(){ btn.disabled = !(amt.value && date.value && ref.value.trim()); }
+  [amt,date,ref].forEach(el=>el.addEventListener('input', check));
+}
+
+/* =========================================================================
+   COMPONENT LIBRARY OVERLAY
+   ========================================================================= */
+function complibContent(){
+  return `
+    <div class="cl-section"><h3>Badges</h3><div class="cl-row">
+      ${badge('pending')}${badge('assigned')}${badge('disputed')}${badge('resolved')}
+      <span class="badge badge-neutral">Neutral</span><span class="badge badge-secondary">Secondary</span>
+    </div></div>
+    <div class="cl-section"><h3>Buttons &amp; filter chips</h3><div class="cl-row">
+      <button class="btn btn-primary">Primary action</button>
+      <button class="btn btn-secondary">Secondary action</button>
+      <button class="btn btn-primary" disabled>Disabled</button>
+      <button class="chip active">Active chip</button>
+      <button class="chip">Inactive chip</button>
+    </div></div>
+    <div class="cl-section"><h3>Stat / Card — delta states</h3><div class="cl-row">
+      <div class="cl-swatch">${statCard('Example','128','up','+4.2%')}</div>
+      <div class="cl-swatch">${statCard('Example','9','down','-1.8%')}</div>
+      <div class="cl-swatch">${statCard('Example','56','flat','0.0%')}</div>
+    </div></div>
+    <div class="cl-section"><h3>Empty / Error / Loading</h3>
+      <div class="cl-row" style="align-items:stretch;">
+        <div class="cl-swatch empty-state"><div class="glyph">▤</div><h4>No records yet</h4><p>Nothing to show here yet.</p></div>
+        <div class="cl-swatch empty-state error"><div class="glyph">!</div><h4>Couldn't load this data</h4><p>The request failed. Try again.</p><button class="btn btn-primary">Retry</button></div>
+      </div>
+      <div class="cl-row" style="margin-top:12px;flex-direction:column;align-items:stretch;">
+        ${[0,1,2].map(()=>`<div class="skeleton-row"><div class="skel" style="width:34px;height:34px;border-radius:8px;"></div><div style="flex:1;"><div class="skel" style="width:40%;height:12px;border-radius:4px;margin-bottom:8px;"></div><div class="skel" style="width:25%;height:10px;border-radius:4px;"></div></div></div>`).join('')}
+      </div>
+    </div>
+    <div class="cl-section"><h3>Responsibility Candidate Row — states</h3>
+      <div class="candidate"><div><div class="name">Andor Fleet Pvt. Ltd.</div><div class="role">Owner · default</div></div></div>
+      <div class="candidate"><div><div class="name">Rohan Mehta</div><div class="role">Driver · Suggested</div></div></div>
+      <div class="candidate selected"><div><div class="name">Metro Cabs Pvt. Ltd.</div><div class="role">Lessee · Selected</div></div><div class="check">✓</div></div>
+    </div>
+  `;
+}
+
+/* =========================================================================
+   TOAST
+   ========================================================================= */
+function toast(msg){
+  const wrap = document.getElementById('toast-wrap');
+  const el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 3400);
+}
+
+/* =========================================================================
+   EVENT WIRING
+   ========================================================================= */
+document.addEventListener('DOMContentLoaded', () => {
+  navigate('dashboard', {}, {skipLoading:true});
+
+  document.body.addEventListener('click', (e) => {
+    const nav = e.target.closest('[data-nav]');
+    if(nav){
+      const target = nav.dataset.nav;
+      if(target==='reports'){ toast("Reports isn't one of this assignment's 6 mandatory screens — intentionally not built."); return; }
+      navigate(target); return;
+    }
+    const route = e.target.closest('[data-route]');
+    if(route){
+      const kind = route.dataset.route;
+      if(kind==='vehicle-row') navigate('vehicle-details', {id:route.dataset.id});
+      else if(kind==='challan-row'){
+        const c = getChallan(route.dataset.id);
+        navigate(c.status==='pending' ? 'challan-details' : 'payment', {id:c.id});
+      }
+      else if(kind==='to-vehicles') navigate('vehicles');
+      else if(kind==='to-challans') navigate('challans');
+      return;
+    }
+    const chipEl = e.target.closest('[data-chip]');
+    if(chipEl){
+      const [group,val] = chipEl.dataset.chip.split(':');
+      STATE.filters[group].status = val;
+      refreshTable(group);
+      return;
+    }
+    const sortEl = e.target.closest('[data-sort]');
+    if(sortEl){
+      const [group,col] = sortEl.dataset.sort.split(':');
+      const s = STATE.sort[group];
+      s.dir = (s.col===col) ? -s.dir : 1;
+      s.col = col;
+      render(); // headers need re-render for arrow state too
+      return;
+    }
+    const candEl = e.target.closest('[data-action="pick-candidate"]');
+    if(candEl){
+      STATE.selected[candEl.dataset.challan] = parseInt(candEl.dataset.idx,10);
+      render();
+      return;
+    }
+    const confirmEl = e.target.closest('[data-action="confirm-assignment"]');
+    if(confirmEl){
+      const id = confirmEl.dataset.challan;
+      const c = getChallan(id);
+      const cand = getCandidates(c)[STATE.selected[id]];
+      c.status = 'assigned';
+      c.confirmed = { name:cand.name, role:cand.role };
+      toast(`Assigned to ${cand.name} (${cand.role}).`);
+      navigate('payment', {id});
+      return;
+    }
+    const paidEl = e.target.closest('[data-action="mark-paid"]');
+    if(paidEl){
+      const id = paidEl.dataset.challan;
+      const c = getChallan(id);
+      const amount = document.getElementById('pay-amount').value;
+      const date = document.getElementById('pay-date').value;
+      const ref = document.getElementById('pay-ref').value;
+      c.status = 'resolved';
+      c.payment = { amount:Number(amount), date: new Date(date).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), ref };
+      toast('Marked Paid & Resolved.');
+      render();
+      return;
+    }
+    const dispEl = e.target.closest('[data-action="mark-disputed"]');
+    if(dispEl){
+      const id = dispEl.dataset.challan;
+      const c = getChallan(id);
+      c.status = 'disputed';
+      c.disputeNote = 'Marked disputed by Finance — pending review.';
+      toast('Marked as Disputed.');
+      render();
+      return;
+    }
+    if(e.target.closest('[data-action="add-vehicle"]')){
+      toast("Add Vehicle (manual / Excel / API) — deliberately out of scope for this assignment's 6 mandatory screens.");
+      return;
+    }
+    if(e.target.closest('[data-action="open-complib"]')){
+      document.getElementById('complib-body').innerHTML = complibContent();
+      document.getElementById('complib-overlay').classList.add('open');
+      return;
+    }
+    if(e.target.closest('[data-action="close-complib"]') || e.target.id==='complib-overlay'){
+      document.getElementById('complib-overlay').classList.remove('open');
+      return;
+    }
+  });
+
+  document.body.addEventListener('input', (e) => {
+    const s = e.target.closest('[data-search]');
+    if(s){
+      STATE.filters[s.dataset.search].q = s.value;
+      refreshTable(s.dataset.search);
+    }
+  });
+});
+
+function refreshTable(group){
+  if(group==='vehicles') document.getElementById('vehicle-tbody').innerHTML = vehicleRows();
+  else document.getElementById('challan-tbody').innerHTML = challanRows();
+  document.querySelectorAll(`[data-chipgroup="${group}"] .chip`).forEach(c=>{
+    const [g,val] = c.dataset.chip.split(':');
+    c.classList.toggle('active', STATE.filters[group].status===val);
+  });
+}
+</script>
+</body>
+</html>
